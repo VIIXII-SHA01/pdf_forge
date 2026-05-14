@@ -4,6 +4,9 @@
  */
 package pdfforge;
 
+import javax.swing.SwingUtilities;
+import pdfforge.ui.PdfForgeLookAndFeel;
+
 /**
  *
  * @author johnl
@@ -14,8 +17,10 @@ public class PdfForge {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        StartPage startPage = new StartPage();
-        EditPage editPage = new EditPage();
+        SwingUtilities.invokeLater(() -> {
+            PdfForgeLookAndFeel.install();
+            new StartPage();
+            new EditPage();
+        });
     }
-    
 }

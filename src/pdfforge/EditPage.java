@@ -17,14 +17,21 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Locale;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import pdfforge.docview.DocumentViewerHost;
+import pdfforge.ui.PdfForgeFileChoosers;
+import pdfforge.ui.PdfForgeLookAndFeel;
 /**
  *
  * @author johnl
@@ -50,13 +57,18 @@ public class EditPage extends javax.swing.JFrame {
     private File currentOpenFile;
     private File currentWorkspaceFolder;
 
+    private final DocumentViewerHost documentViewerHost = new DocumentViewerHost();
+
     /**
      * Creates new form EditPage
      */
     public EditPage() {
         initComponents();
+        installMainWorkspaceLayout();
         configureFileMenu();
         configureEditMenu();
+        configureViewMenu();
+        configureSettingsMenu();
         installExplorerResizeGrip();
         installExplorerToggleShortcut();
         this.setTitle("PDF Forge");
@@ -97,6 +109,22 @@ public class EditPage extends javax.swing.JFrame {
         }
         explorerPane.revalidate();
         getContentPane().repaint();
+    }
+
+    private void installMainWorkspaceLayout() {
+        java.awt.Container root = getContentPane();
+        root.removeAll();
+        root.setLayout(new BorderLayout(0, 0));
+        root.setBackground(new Color(56, 56, 56));
+        root.add(jPanel1, BorderLayout.NORTH);
+        JPanel mainRow = new JPanel(new BorderLayout());
+        mainRow.setOpaque(false);
+        mainRow.setBackground(new Color(56, 56, 56));
+        explorerPane.setPreferredSize(new Dimension(defaultExplorerWidthPx(), 400));
+        mainRow.add(explorerPane, BorderLayout.WEST);
+        mainRow.add(documentViewerHost, BorderLayout.CENTER);
+        root.add(mainRow, BorderLayout.CENTER);
+        root.revalidate();
     }
 
     private void configureFileMenu() {
@@ -203,6 +231,124 @@ public class EditPage extends javax.swing.JFrame {
         });
     }
 
+    private void configureViewMenu() {
+        for (ActionListener al : view.getActionListeners()) {
+            view.removeActionListener(al);
+        }
+        view.removeAll();
+
+        JMenuItem zoomIn = new JMenuItem("Zoom in");
+        zoomIn.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, InputEvent.CTRL_DOWN_MASK));
+        zoomIn.addActionListener(e -> onViewMenuZoomIn());
+
+        JMenuItem zoomOut = new JMenuItem("Zoom out");
+        zoomOut.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, InputEvent.CTRL_DOWN_MASK));
+        zoomOut.addActionListener(e -> onViewMenuZoomOut());
+
+        JMenuItem themes = new JMenuItem("Themes");
+        themes.addActionListener(e -> onViewMenuThemes());
+
+        JRadioButtonMenuItem documentView = new JRadioButtonMenuItem("Document view", true);
+        documentView.addActionListener(e -> onViewMenuDocumentView());
+        JRadioButtonMenuItem pagesView = new JRadioButtonMenuItem("Pages view");
+        pagesView.addActionListener(e -> onViewMenuPagesView());
+        ButtonGroup viewModeGroup = new ButtonGroup();
+        viewModeGroup.add(documentView);
+        viewModeGroup.add(pagesView);
+
+        view.add(zoomIn);
+        view.add(zoomOut);
+        view.addSeparator();
+        view.add(themes);
+        view.addSeparator();
+        view.add(documentView);
+        view.add(pagesView);
+
+        view.addMenuListener(new javax.swing.event.MenuListener() {
+            @Override
+            public void menuSelected(javax.swing.event.MenuEvent e) {
+                styleDropdownMenu(view);
+            }
+
+            @Override
+            public void menuDeselected(javax.swing.event.MenuEvent e) {
+            }
+
+            @Override
+            public void menuCanceled(javax.swing.event.MenuEvent e) {
+            }
+        });
+    }
+
+    private void configureSettingsMenu() {
+        for (ActionListener al : settings.getActionListeners()) {
+            settings.removeActionListener(al);
+        }
+        settings.removeAll();
+
+        JMenuItem exportDocx = new JMenuItem("Export as DOCX");
+        exportDocx.addActionListener(e -> onSettingsMenuExportDocx());
+
+        JMenuItem exportPdf = new JMenuItem("Export as PDF");
+        exportPdf.addActionListener(e -> onSettingsMenuExportPdf());
+
+        JMenuItem help = new JMenuItem("Help");
+        help.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
+        help.addActionListener(e -> onSettingsMenuHelp());
+
+        settings.add(exportDocx);
+        settings.add(exportPdf);
+        settings.addSeparator();
+        settings.add(help);
+
+        settings.addMenuListener(new javax.swing.event.MenuListener() {
+            @Override
+            public void menuSelected(javax.swing.event.MenuEvent e) {
+                styleDropdownMenu(settings);
+            }
+
+            @Override
+            public void menuDeselected(javax.swing.event.MenuEvent e) {
+            }
+
+            @Override
+            public void menuCanceled(javax.swing.event.MenuEvent e) {
+            }
+        });
+    }
+
+    private void onViewMenuZoomIn() {
+        logger.fine("View > Zoom in");
+    }
+
+    private void onViewMenuZoomOut() {
+        logger.fine("View > Zoom out");
+    }
+
+    private void onViewMenuThemes() {
+        logger.fine("View > Themes");
+    }
+
+    private void onViewMenuDocumentView() {
+        logger.fine("View > Document view");
+    }
+
+    private void onViewMenuPagesView() {
+        logger.fine("View > Pages view");
+    }
+
+    private void onSettingsMenuExportDocx() {
+        logger.fine("Settings > Export as DOCX");
+    }
+
+    private void onSettingsMenuExportPdf() {
+        logger.fine("Settings > Export as PDF");
+    }
+
+    private void onSettingsMenuHelp() {
+        logger.fine("Settings > Help");
+    }
+
     private void onEditMenuUndo() {
         logger.fine("Edit > Undo");
     }
@@ -295,12 +441,13 @@ public class EditPage extends javax.swing.JFrame {
     }
 
     private void onFileMenuOpenFile() {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = PdfForgeFileChoosers.create();
         chooser.setDialogTitle("Open File");
-        chooser.setAcceptAllFileFilterUsed(true);
-        FileNameExtensionFilter pdfFilter = new FileNameExtensionFilter("PDF documents (*.pdf)", "pdf");
-        chooser.addChoosableFileFilter(pdfFilter);
-        chooser.setFileFilter(pdfFilter);
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        FileNameExtensionFilter pdfOrDocx = new FileNameExtensionFilter(
+                "PDF or Word (*.pdf, *.docx)", "pdf", "docx");
+        chooser.setFileFilter(pdfOrDocx);
         if (currentWorkspaceFolder != null) {
             chooser.setCurrentDirectory(currentWorkspaceFolder);
         } else if (currentOpenFile != null && currentOpenFile.getParentFile() != null) {
@@ -308,13 +455,40 @@ public class EditPage extends javax.swing.JFrame {
         }
         int result = chooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
-            currentOpenFile = chooser.getSelectedFile();
-            logger.info("Open file: " + currentOpenFile.getAbsolutePath());
+            File chosen = chooser.getSelectedFile();
+            if (chosen != null && isPdfOrDocxFile(chosen)) {
+                currentOpenFile = chosen;
+                setTitle("PDF Forge - " + chosen.getName());
+                logger.info("Open file: " + currentOpenFile.getAbsolutePath());
+                documentViewerHost.displayFile(chosen, err -> {
+                    setTitle("PDF Forge");
+                    currentOpenFile = null;
+                    logger.log(java.util.logging.Level.WARNING, "Document view failed", err);
+                    String detail = err.getMessage();
+                    if (detail == null || detail.isBlank()) {
+                        detail = err.getClass().getSimpleName();
+                    }
+                    JOptionPane.showMessageDialog(this,
+                            "Could not load this document.\n\n" + detail,
+                            "Open File",
+                            JOptionPane.ERROR_MESSAGE);
+                });
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Only PDF (.pdf) and Word (.docx) files can be opened.",
+                        "Open File",
+                        JOptionPane.WARNING_MESSAGE);
+            }
         }
     }
 
+    private static boolean isPdfOrDocxFile(File f) {
+        String name = f.getName().toLowerCase(Locale.ROOT);
+        return name.endsWith(".pdf") || name.endsWith(".docx");
+    }
+
     private void onFileMenuOpenFolder() {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = PdfForgeFileChoosers.create();
         chooser.setDialogTitle("Open Folder");
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
@@ -345,7 +519,7 @@ public class EditPage extends javax.swing.JFrame {
     }
 
     private void onFileMenuSaveAs() {
-        JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = PdfForgeFileChoosers.create();
         chooser.setDialogTitle("Save As");
         chooser.setSelectedFile(currentOpenFile != null ? currentOpenFile : new File("document.pdf"));
         FileNameExtensionFilter pdfFilter = new FileNameExtensionFilter("PDF documents (*.pdf)", "pdf");
@@ -579,7 +753,7 @@ public class EditPage extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(16, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(jButton5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -597,7 +771,7 @@ public class EditPage extends javax.swing.JFrame {
                     .addComponent(jLabel5)
                     .addComponent(jLabel6)
                     .addComponent(jLabel7))
-                .addGap(358, 358, 358))
+                .addGap(0, 0, 0))
         );
 
         explorerPane.setBackground(new java.awt.Color(80, 80, 80));
@@ -640,13 +814,11 @@ public class EditPage extends javax.swing.JFrame {
         view.setForeground(new java.awt.Color(255, 255, 255));
         view.setText("View");
         view.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        view.addActionListener(this::viewActionPerformed);
         jMenuBar1.add(view);
 
         settings.setForeground(new java.awt.Color(255, 255, 255));
         settings.setText("Settings");
         settings.setFont(new java.awt.Font("Segoe UI", 1, 15)); // NOI18N
-        settings.addActionListener(this::settingsActionPerformed);
         jMenuBar1.add(settings);
 
         setJMenuBar(jMenuBar1);
@@ -663,7 +835,7 @@ public class EditPage extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, 0)
                 .addComponent(explorerPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -671,37 +843,14 @@ public class EditPage extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void viewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_viewActionPerformed
-
-    private void settingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_settingsActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_settingsActionPerformed
-
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new EditPage().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> {
+            PdfForgeLookAndFeel.install();
+            new EditPage().setVisible(true);
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
