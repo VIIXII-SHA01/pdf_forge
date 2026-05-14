@@ -445,9 +445,7 @@ public class EditPage extends javax.swing.JFrame {
         chooser.setDialogTitle("Open File");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
-        FileNameExtensionFilter pdfOrDocx = new FileNameExtensionFilter(
-                "PDF or Word (*.pdf, *.docx)", "pdf", "docx");
-        chooser.setFileFilter(pdfOrDocx);
+        chooser.setFileFilter(PdfForgeFileChoosers.createLocalPdfDocxFilter());
         if (currentWorkspaceFolder != null) {
             chooser.setCurrentDirectory(currentWorkspaceFolder);
         } else if (currentOpenFile != null && currentOpenFile.getParentFile() != null) {
@@ -646,43 +644,43 @@ public class EditPage extends javax.swing.JFrame {
         jPanel1.setBackground(new java.awt.Color(100, 100, 100));
         jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(100, 100, 100)));
 
-        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/arrows-split-up-and-left-white.png"))); // NOI18N
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/arrows-split-up-and-left-white.png"))); // NOI18N
         jButton1.setBorder(null);
         jButton1.setBorderPainted(false);
         jButton1.setContentAreaFilled(false);
         jButton1.setFocusPainted(false);
 
-        jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/refresh-white.png"))); // NOI18N
+        jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/refresh-white.png"))); // NOI18N
         jButton3.setBorder(null);
         jButton3.setBorderPainted(false);
         jButton3.setContentAreaFilled(false);
         jButton3.setFocusPainted(false);
 
-        jButton4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/file-zipper-white.png"))); // NOI18N
+        jButton4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/file-zipper-white.png"))); // NOI18N
         jButton4.setBorder(null);
         jButton4.setBorderPainted(false);
         jButton4.setContentAreaFilled(false);
         jButton4.setFocusPainted(false);
 
-        jButton5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/water-well-white.png"))); // NOI18N
+        jButton5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/water-well-white.png"))); // NOI18N
         jButton5.setBorder(null);
         jButton5.setBorderPainted(false);
         jButton5.setContentAreaFilled(false);
         jButton5.setFocusPainted(false);
 
-        jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/merge-white.png"))); // NOI18N
+        jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/merge-white.png"))); // NOI18N
         jButton2.setBorder(null);
         jButton2.setBorderPainted(false);
         jButton2.setContentAreaFilled(false);
         jButton2.setFocusPainted(false);
 
-        jButton7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/swap-white.png"))); // NOI18N
+        jButton7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/swap-white.png"))); // NOI18N
         jButton7.setBorder(null);
         jButton7.setBorderPainted(false);
         jButton7.setContentAreaFilled(false);
         jButton7.setFocusPainted(false);
 
-        jButton9.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/compress-white.png"))); // NOI18N
+        jButton9.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/compress-white.png"))); // NOI18N
         jButton9.setBorder(null);
         jButton9.setBorderPainted(false);
         jButton9.setContentAreaFilled(false);

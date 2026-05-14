@@ -8,8 +8,10 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -38,12 +40,13 @@ public final class DocxDocumentViewPanel extends JPanel {
     private static final Logger LOG = Logger.getLogger(DocxDocumentViewPanel.class.getName());
 
     private static final Color CANVAS = new Color(28, 28, 30);
-    private static final Color PAGE = new Color(58, 58, 62);
-    private static final Color TEXT = new Color(236, 236, 240);
+    private static final Color PAGE = new Color(250, 250, 250);
+    private static final Color PAGE_BORDER = new Color(200, 200, 200);
+    private static final Color TEXT = new Color(32, 32, 32);
 
     private final JScrollPane scroll = new JScrollPane();
     private final JTextPane textPane = new JTextPane();
-    private SwingWorker<String, Void> activeDocx;
+    private SwingWorker<DocxPages, Void> activeDocx;
 
     public DocxDocumentViewPanel() {
         super(new BorderLayout());
@@ -53,7 +56,7 @@ public final class DocxDocumentViewPanel extends JPanel {
         textPane.setBackground(PAGE);
         textPane.setForeground(TEXT);
         textPane.setCaretColor(TEXT);
-        textPane.setBorder(BorderFactory.createEmptyBorder(28, 36, 40, 36));
+        textPane.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         textPane.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
         textPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         HTMLEditorKit kit = new HTMLEditorKit();
@@ -69,12 +72,13 @@ public final class DocxDocumentViewPanel extends JPanel {
     }
 
     private static void applyDarkHtmlStyles(StyleSheet css) {
-        css.addRule("body { margin: 0; font-family: Segoe UI, sans-serif; color: #ececec; background: #3a3a3e; }");
-        css.addRule("h1, h2, h3 { color: #ffffff; margin: 18px 0 8px 0; }");
-        css.addRule("h1 { font-size: 22px; font-weight: bold; }");
-        css.addRule("h2 { font-size: 18px; font-weight: bold; }");
-        css.addRule("h3 { font-size: 16px; font-weight: bold; }");
-        css.addRule("p { font-size: 14px; line-height: 1.5; margin: 6px 0; }");
+        css.addRule("body { margin: 0; padding: 0; font-family: Segoe UI, sans-serif; color: #202020; background: #ffffff; }");
+        css.addRule("h1, h2, h3 { color: #111111; margin: 24px 0 12px 0; }");
+        css.addRule("h1 { font-size: 24px; font-weight: bold; }");
+        css.addRule("h2 { font-size: 20px; font-weight: bold; }");
+        css.addRule("h3 { font-size: 18px; font-weight: bold; }");
+        css.addRule("p { font-size: 14px; line-height: 1.7; margin: 10px 0; }");
+        css.addRule("strong, b { font-weight: bold; }");
     }
 
     public void clear() {
@@ -101,10 +105,10 @@ public final class DocxDocumentViewPanel extends JPanel {
         if (activeDocx != null) {
             activeDocx.cancel(true);
         }
-        SwingWorker<String, Void> worker = new SwingWorker<>() {
+        SwingWorker<DocxPages, Void> worker = new SwingWorker<>() {
             @Override
-            protected String doInBackground() throws Exception {
-                return buildHtml(file);
+            protected DocxPages doInBackground() throws Exception {
+                return buildPages(file);
             }
 
             @Override
@@ -113,34 +117,42 @@ public final class DocxDocumentViewPanel extends JPanel {
                     return;
                 }
                 try {
-                    String html = get();
+                    DocxPages pages = get();
                     try {
-                        textPane.setText(html);
-                        textPane.setCaretPosition(0);
-                        textPane.setSize(new Dimension(680, 50_000));
-                        int bodyHeight = textPane.getPreferredSize().height;
-
-                        JPanel page = new JPanel(new BorderLayout());
-                        page.setOpaque(true);
-                        page.setBackground(PAGE);
-                        page.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(new Color(52, 52, 58), 1),
-                                BorderFactory.createEmptyBorder(0, 0, 0, 0)));
-                        page.add(textPane, BorderLayout.CENTER);
-                        page.setPreferredSize(new Dimension(720, bodyHeight + 64));
-
-                        JPanel host = new JPanel(new GridBagLayout());
+                        JPanel host = new JPanel();
+                        host.setLayout(new javax.swing.BoxLayout(host, javax.swing.BoxLayout.Y_AXIS));
                         host.setBackground(CANVAS);
-                        GridBagConstraints c = new GridBagConstraints();
-                        c.gridx = 0;
-                        c.gridy = 0;
-                        c.weightx = 1;
-                        c.weighty = 1;
-                        c.anchor = GridBagConstraints.NORTH;
-                        c.insets = new Insets(28, 40, 40, 40);
-                        host.add(page, c);
 
-                        scroll.setViewportView(host);
+                        for (int i = 0; i < pages.pages.size(); i++) {
+                            String htmlPage = pages.pages.get(i);
+                            JTextPane pagePane = createPageTextPane(htmlPage, pages.pageWidth);
+                            pagePane.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+
+                            JPanel pagePanel = new JPanel(new BorderLayout());
+                            pagePanel.setOpaque(true);
+                            pagePanel.setBackground(PAGE);
+                            pagePanel.setBorder(BorderFactory.createCompoundBorder(
+                                    BorderFactory.createLineBorder(PAGE_BORDER, 1),
+                                    BorderFactory.createEmptyBorder(24, 24, 24, 24)));
+                            pagePanel.add(pagePane, BorderLayout.CENTER);
+                            pagePanel.setMaximumSize(new Dimension(pages.pageWidth, Integer.MAX_VALUE));
+                            pagePanel.setAlignmentX(CENTER_ALIGNMENT);
+
+                            host.add(pagePanel);
+                            if (i < pages.pages.size() - 1) {
+                                host.add(javax.swing.Box.createRigidArea(new Dimension(0, 16)));
+                            }
+                        }
+
+                        JPanel wrapper = new JPanel(new GridBagLayout());
+                        wrapper.setOpaque(false);
+                        GridBagConstraints gbc = new GridBagConstraints();
+                        gbc.gridx = 0;
+                        gbc.gridy = 0;
+                        gbc.anchor = GridBagConstraints.NORTH;
+                        gbc.fill = GridBagConstraints.NONE;
+                        wrapper.add(host, gbc);
+                        scroll.setViewportView(wrapper);
                         scroll.getVerticalScrollBar().setValue(0);
                         revalidate();
                         repaint();
@@ -171,30 +183,121 @@ public final class DocxDocumentViewPanel extends JPanel {
         worker.execute();
     }
 
-    private static String buildHtml(File file) throws IOException {
-        try (FileInputStream in = new FileInputStream(file);
+    private static DocxPages buildPages(File file) throws IOException {
+        try (InputStream in = FileAccessUtils.openForRead(file);
              XWPFDocument document = new XWPFDocument(in)) {
-            StringBuilder sb = new StringBuilder(4096);
-            sb.append("<html><body>");
+            int pageWidth = getPageWidthPx(document);
+            int pageHeight = getPageHeightPx(document);
+            int charsPerPage = Math.max(3600, (int) ((pageWidth / 7.0) * (pageHeight / 20.0)));
+
+            List<String> pages = new ArrayList<>();
+            StringBuilder current = new StringBuilder();
+            int currentCount = 0;
             for (IBodyElement el : document.getBodyElements()) {
                 if (el instanceof XWPFParagraph) {
-                    appendParagraphHtml(sb, (XWPFParagraph) el);
+                    String paragraphHtml = buildParagraphHtml((XWPFParagraph) el);
+                    if (currentCount > 0 && currentCount + paragraphHtml.length() > charsPerPage) {
+                        pages.add(wrapHtml(current.toString()));
+                        current.setLength(0);
+                        currentCount = 0;
+                    }
+                    current.append(paragraphHtml);
+                    currentCount += paragraphHtml.length();
                 }
             }
-            sb.append("</body></html>");
-            return sb.toString();
+            if (currentCount > 0 || pages.isEmpty()) {
+                pages.add(wrapHtml(current.toString()));
+            }
+            return new DocxPages(pageWidth, pageHeight, pages);
         }
     }
 
-    private static void appendParagraphHtml(StringBuilder sb, XWPFParagraph p) {
+    private static int getPageWidthPx(XWPFDocument document) {
+        org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr sectPr = document.getDocument().getBody().getSectPr();
+        if (sectPr != null && sectPr.isSetPgSz()) {
+            org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz pgSz = sectPr.getPgSz();
+            if (pgSz.isSetW()) {
+                long widthTwips = parseTwipsValue(pgSz.getW());
+                if (widthTwips > 0) {
+                    return Math.max(640, (int) (widthTwips * 96.0 / 1440.0));
+                }
+            }
+        }
+        return 850;
+    }
+
+    private static int getPageHeightPx(XWPFDocument document) {
+        org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr sectPr = document.getDocument().getBody().getSectPr();
+        if (sectPr != null && sectPr.isSetPgSz()) {
+            org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPageSz pgSz = sectPr.getPgSz();
+            if (pgSz.isSetH()) {
+                long heightTwips = parseTwipsValue(pgSz.getH());
+                if (heightTwips > 0) {
+                    return Math.max(900, (int) (heightTwips * 96.0 / 1440.0));
+                }
+            }
+        }
+        return 1100;
+    }
+
+    private static long parseTwipsValue(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof java.math.BigInteger) {
+            return ((java.math.BigInteger) value).longValue();
+        }
+        if (value == null) {
+            return 0L;
+        }
+        String text = value.toString().trim();
+        if (text.isEmpty()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(text);
+        } catch (NumberFormatException ex) {
+            try {
+                return new java.math.BigDecimal(text).longValue();
+            } catch (NumberFormatException ignored) {
+                return 0L;
+            }
+        }
+    }
+
+    private static JTextPane createPageTextPane(String html, int pageWidth) {
+        JTextPane pane = new JTextPane();
+        pane.setEditable(false);
+        pane.setOpaque(true);
+        pane.setBackground(PAGE);
+        pane.setForeground(TEXT);
+        pane.setCaretColor(TEXT);
+        pane.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
+        pane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        HTMLEditorKit kit = new HTMLEditorKit();
+        pane.setEditorKit(kit);
+        HTMLDocument doc = (HTMLDocument) kit.createDefaultDocument();
+        applyDarkHtmlStyles(doc.getStyleSheet());
+        pane.setDocument(doc);
+        pane.setText(html);
+        pane.setSize(pageWidth - 64, Integer.MAX_VALUE);
+        Dimension d = pane.getPreferredSize();
+        pane.setPreferredSize(new Dimension(pageWidth - 64, d.height));
+        return pane;
+    }
+
+    private static String wrapHtml(String body) {
+        return "<html><body>" + body + "</body></html>";
+    }
+
+    private static String buildParagraphHtml(XWPFParagraph p) {
         String raw = p.getText();
         if (raw == null) {
-            return;
+            return "";
         }
         String text = raw.trim();
         if (text.isEmpty()) {
-            sb.append("<p>&nbsp;</p>");
-            return;
+            return "<p>&nbsp;</p>";
         }
         String esc = escapeHtml(text);
         String styleId = p.getStyle();
@@ -209,11 +312,22 @@ public final class DocxDocumentViewPanel extends JPanel {
                 tag = "h3";
             }
         }
-        var runs = p.getRuns();
+        java.util.List<org.apache.poi.xwpf.usermodel.XWPFRun> runs = p.getRuns();
         if (runs != null && runs.stream().anyMatch(r -> r != null && r.isBold()) && "p".equals(tag)) {
-            sb.append("<p><b>").append(esc).append("</b></p>");
-        } else {
-            sb.append("<").append(tag).append(">").append(esc).append("</").append(tag).append(">");
+            return "<p><b>" + esc + "</b></p>";
+        }
+        return "<" + tag + ">" + esc + "</" + tag + ">";
+    }
+
+    private static final class DocxPages {
+        final int pageWidth;
+        final int pageHeight;
+        final java.util.List<String> pages;
+
+        DocxPages(int pageWidth, int pageHeight, java.util.List<String> pages) {
+            this.pageWidth = pageWidth;
+            this.pageHeight = pageHeight;
+            this.pages = pages;
         }
     }
 

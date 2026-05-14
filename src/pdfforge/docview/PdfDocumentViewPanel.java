@@ -9,6 +9,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -81,7 +82,8 @@ public final class PdfDocumentViewPanel extends JPanel {
         SwingWorker<List<BufferedImage>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<BufferedImage> doInBackground() throws Exception {
-                try (PDDocument doc = PDDocument.load(file)) {
+                try (InputStream in = FileAccessUtils.openForRead(file);
+                     PDDocument doc = PDDocument.load(in)) {
                     PDFRenderer renderer = new PDFRenderer(doc);
                     int n = doc.getNumberOfPages();
                     List<BufferedImage> images = new ArrayList<>(n);

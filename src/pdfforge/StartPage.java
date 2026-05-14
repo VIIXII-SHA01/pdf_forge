@@ -63,13 +63,13 @@ public class StartPage extends javax.swing.JFrame {
 
         jPanel2.setOpaque(false);
 
-        openFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/open-folder-white.png"))); // NOI18N
+        openFolder.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/open-folder-white.png"))); // NOI18N
         openFolder.setBorder(null);
         openFolder.setContentAreaFilled(false);
         openFolder.setFocusPainted(false);
         openFolder.addActionListener(this::openFolderActionPerformed);
 
-        openFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/add-file-white.png"))); // NOI18N
+        openFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pdfforge/icons/add-file-white.png"))); // NOI18N
         openFile.setBorder(null);
         openFile.setContentAreaFilled(false);
         openFile.setFocusPainted(false);
